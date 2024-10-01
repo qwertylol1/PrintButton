@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Print Options</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f8f8f8;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+
+    .print-popup {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: white;
+      padding: 20px;
+      border-radius: 4px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      z-index: 100;
+      width: 80%;
+      max-width: 800px;
+    }
+
+    .print-popup h3 {
+      margin-top: 0;
+    }
+
+    .print-popup .options-container {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .print-popup .options-column {
+      flex: 1;
+      margin-right: 20px;
+    }
+
+    .print-popup input[type="checkbox"] {
+      margin-right: 5px;
+    }
+
+    .print-popup button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    @media print {
+      .print-popup {
+        display: none !important; /* Hide popup during print */
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <button onclick="openPrintPopup()">Download & Print</button>
+
+  <div class="print-popup" id="printPopup">
+    <h3>Print Options</h3>
+    <button onclick="hidePrintPopup()">Close</button>
+    <div class="options-container">
+      <div class="options-column">
+        <h4>Sections:</h4>
+        <div id="section-checkboxes"></div>
+      </div>
+      <div class="options-column">
+        <h4>Options:</h4>
+        <input type="radio" name="images" value="withImages" id="withImages" checked>
+        <label for="withImages">With Images</label><br>
+        <input type="radio" name="images" value="withoutImages" id="withoutImages">
+        <label for="withoutImages">Without Images</label>
+      </div>
+    </div>
+    <button onclick="printSelectedSections()">Print</button>
+  </div>
+
+  <script>
+    // Opens the print options popup and dynamically creates checkboxes for sections
+    function openPrintPopup() {
+      const printPopup = document.getElementById('printPopup');
+      printPopup.style.display = 'block';
+
+      // Get all sections from the page dynamically
+      const sections = document.querySelectorAll('section');
+      const sectionCheckboxes = document.getElementById('section-checkboxes');
+      sectionCheckboxes.innerHTML = ''; // Clear previous checkboxes
+
+      sections.forEach((section, index) => {
+        const sectionName = section.getAttribute('data-section-name') || `Section ${index + 1}`; // Use 'data-section-name' or default
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.name = 'sections';
+        checkbox.value = index;
+        checkbox.id = `section${index + 1}`;
+        const label = document.createElement('label');
+        label.htmlFor = `section${index + 1}`;
+        label.textContent = sectionName;
+        sectionCheckboxes.appendChild(checkbox);
+        sectionCheckboxes.appendChild(label);
+        sectionCheckboxes.appendChild(document.createElement('br'));
+      });
+    }
+
+    // Hides the popup
+    function hidePrintPopup() {
+      const printPopup = document.getElementById('printPopup');
+      printPopup.style.display = 'none';
+    }
+
+    // Gathers selected sections and prints them
+    function printSelectedSections() {
+      const selectedSections = document.querySelectorAll('input[name="sections"]:checked');
+      const imagesOption = document.querySelector('input[name="images"]:checked').value;
+      let printHtml = '';
+
+      selectedSections.forEach((checkbox) => {
+        const sectionIndex = checkbox.value;
+        const sectionElement = document.querySelectorAll('section')[sectionIndex];
+
+        // Clone the section to modify it for printing
+        const sectionClone = sectionElement.cloneNode(true);
+        
+        // Optionally remove images if the user selects "withoutImages"
+        if (imagesOption === 'withoutImages') {
+          const images = sectionClone.querySelectorAll('img');
+          images.forEach((img) => img.remove());
+        }
+
+        // Append the cloned section to the print content
+        printHtml += sectionClone.outerHTML;
+      });
+
+      if (printHtml) {
+        // Open the print window and print the selected sections
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+          <html>
+          <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Print Section</title>
+            <style>
+              body { font-family: Arial, sans-serif; margin: 10px; }
+              img { max-width: 100%; height: auto; }
+            </style>
+          </head>
+          <body>
+            ${printHtml}
+          </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        printWindow.print();
+      } else {
+        alert('No sections selected to print!');
+      }
+    }
+  </script>
+
+</body>
+</html>
